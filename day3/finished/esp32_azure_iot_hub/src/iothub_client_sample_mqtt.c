@@ -99,7 +99,7 @@ void iothub_client_sample_mqtt_run(void)
             {
                 time(&current_time);
 
-                if (difftime(current_time, sent_time) > 30.0)
+                if (difftime(current_time, sent_time) > TX_INTERVAL_SECOND)
                 {
 
                     float temperature = 30.0;
