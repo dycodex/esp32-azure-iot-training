@@ -1,5 +1,4 @@
 # ESP32 + Azure IoT Hub
 
-## Training Video
-* Part 1: [https://youtu.be/rsmERLVr4wI](https://youtu.be/rsmERLVr4wI)
-* Part 2: [https://youtu.be/zlrnIURkv-0](https://youtu.be/zlrnIURkv-0)
+## Credit
+* [esp-azure](https://github.com/espressif/esp-azure) component. We bundled it here, since we need to do minor changes to make it works with PlatformIO and VSCode
