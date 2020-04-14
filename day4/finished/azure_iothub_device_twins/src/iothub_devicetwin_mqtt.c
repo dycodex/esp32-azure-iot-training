@@ -130,10 +130,10 @@ static void DeviceTwinCallback(DEVICE_TWIN_UPDATE_STATE update_state, const unsi
         return;
     }
 
-    if (newDevice->tx_interval > 0 && newDevice->tx_interval != oldDevice->tx_interval)
+    if (newDevice->desired.tx_interval > 0 && newDevice->desired.tx_interval != oldDevice->desired.tx_interval)
     {
-        printf("Received new tx_interval");
-        oldDevice->tx_interval = newDevice->tx_interval;
+        printf("Received new tx_interval\r\n");
+        oldDevice->desired.tx_interval = newDevice->desired.tx_interval;
     }
 
     free(newDevice);
