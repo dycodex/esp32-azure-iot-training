@@ -35,10 +35,20 @@ typedef struct CONNECTIVITY_TAG
     char *type;
 } Connectivity;
 
-typedef struct DEVICE_TAG
+typedef struct DESIRED_PROPS_STRUCT
 {
     unsigned int tx_interval;
+} DesiredProps;
+
+typedef struct REPORTED_PROPS_STRUCT
+{
     Connectivity connectivity;
+} ReportedProps;
+
+typedef struct DEVICE_TAG
+{
+    DesiredProps desired;
+    ReportedProps reported;
 } Device;
 
 static int callbackCounter;
@@ -57,8 +67,7 @@ static char *serializeTwinToJSON(Device *device)
     JSON_Value *root_value = json_value_init_object();
     JSON_Object *root_object = json_value_get_object(root_value);
 
-    json_object_set_number(root_object, "tx_interval", device->tx_interval);
-    json_object_dotset_string(root_object, "connectivity.type", device->connectivity.type);
+    json_object_dotset_string(root_object, "connectivity.type", device->reported.connectivity.type);
 
     result = json_serialize_to_string(root_value);
     json_value_free(root_value);
@@ -98,7 +107,7 @@ static Device *parseTwinFromJSON(const char *json, DEVICE_TWIN_UPDATE_STATE upda
         unsigned int data = (unsigned int)json_value_get_number(desiredTxInterval);
         if (data > 0)
         {
-            device->tx_interval = data;
+            device->desired.tx_interval = data;
         }
     }
 
@@ -161,7 +170,6 @@ void iothub_devicewin_mqtt(void)
     IOTHUB_DEVICE_CLIENT_LL_HANDLE iotHubClientHandle;
     EVENT_INSTANCE message;
 
-    srand((unsigned int)time(NULL));
     callbackCounter = 0;
 
     if (platform_init() != 0)
@@ -178,8 +186,8 @@ void iothub_devicewin_mqtt(void)
 
     Device device;
     memset(&device, 0, sizeof(Device));
-    device.connectivity.type = "wifi";
-    device.tx_interval = TX_INTERVAL_SECOND;
+    device.reported.connectivity.type = "wifi";
+    device.desired.tx_interval = TX_INTERVAL_SECOND;
 
     char *reportedProperties = serializeTwinToJSON(&device);
     if (reportedProperties == NULL)
@@ -203,7 +211,7 @@ void iothub_devicewin_mqtt(void)
     {
         time(&current_time);
 
-        if (difftime(current_time, sent_time) > device.tx_interval)
+        if (difftime(current_time, sent_time) > device.desired.tx_interval)
         {
             float temperature = 30.0;
             sprintf_s(msgText, sizeof(msgText), "{\"temperature\":%f}", temperature);
