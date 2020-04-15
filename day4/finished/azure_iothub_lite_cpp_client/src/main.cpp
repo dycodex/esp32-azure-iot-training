@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <AzureIoTLiteClient.h>
 #include <WiFiClientSecure.h>
+#include <iotc_json.h>
 
 const char *ssidName = "";         // your network SSID (name of wifi network)
 const char *ssidPass = "";         // your network password
@@ -11,6 +12,7 @@ WiFiClientSecure wifiClient;
 AzureIoTLiteClient iotclient(wifiClient);
 
 bool isConnected = false;
+unsigned int txInterval = 60;
 
 static bool connectWiFi()
 {
@@ -68,6 +70,36 @@ void onEvent(const AzureIoTCallbacks_e cbType, const AzureIoTCallbackInfo_t *cal
         LOG_VERBOSE("Command name was => %s\r\n", callbackInfo->tag);
         executeCommand(callbackInfo->tag, *buffer);
     }
+
+    if (strcmp(callbackInfo->eventName, "SettingsUpdated") == 0) {
+        // handle desired state
+        LOG_VERBOSE("Handling desired properties\r\n");
+        LOG_VERBOSE(callbackInfo->payload);
+
+        jsobject_t parsed;
+        jsobject_t desired;
+        jsobject_initialize(&parsed, callbackInfo->payload, callbackInfo->payloadLength);
+
+        if (jsobject_get_object_by_name(&parsed, "desired", &desired) == 0) {
+            // handle complete update
+            double number = jsobject_get_number_by_name(&desired, "txInterval");
+            LOG_VERBOSE("Received complete update, txInterval: %f\r\n", number);
+            if (number > 0) {
+                txInterval = static_cast<unsigned int>(number);
+            }
+        }
+        else
+        {
+            // handle partial update
+            double number = jsobject_get_number_by_name(&parsed, "txInterval");
+            LOG_VERBOSE("Received partial update, txInterval: %f\r\n", number);
+            if (number > 0) {
+                txInterval = static_cast<unsigned int>(number);
+            }
+        }
+        
+        jsobject_free(&parsed);
+    }
 }
 
 void setup()
@@ -111,7 +143,7 @@ void loop()
     }
 
     unsigned long ms = millis();
-    if (ms - lastTick > 10000)
+    if (ms - lastTick > txInterval * 1000)
     { // send telemetry every 10 seconds
         char msg[64] = {0};
         int pos = 0;
@@ -126,18 +158,10 @@ void loop()
             pos = snprintf(msg, sizeof(msg) - 1, "{\"temperature\": %.2f}", tempVal * 1.0f);
             msg[pos] = 0;
             errorCode = iotclient.sendTelemetry(msg, pos);
-
-            // Send property
-            pos = snprintf(msg, sizeof(msg) - 1, "{\"temperatureAlert\": %d}", (tempVal >= 38));
-            msg[pos] = 0;
-            errorCode = iotclient.sendProperty(msg, pos);
         }
         else
         {
-            // Send property
-            pos = snprintf(msg, sizeof(msg) - 1, "{\"wornMask\": %d}", (random(0, 100) % 2 == 0));
-            msg[pos] = 0;
-            errorCode = iotclient.sendProperty(msg, pos);
+
         }
 
         if (!errorCode)
