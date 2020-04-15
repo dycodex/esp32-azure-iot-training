@@ -1,0 +1,3 @@
+[submodule "day4/finished/azure_iothub_lite_cpp_client/lib/AzureIoTLiteClient"]
+	path = day4/finished/azure_iothub_lite_cpp_client/lib/AzureIoTLiteClient
+	url = git@github.com:andriyadi/AzureIoTLiteClient.git
