@@ -3,6 +3,8 @@
 #include <WiFiClientSecure.h>
 #include <iotc_json.h>
 
+const int led_pin = 2; // your user LED pin
+
 const char *ssidName = "";         // your network SSID (name of wifi network)
 const char *ssidPass = "";         // your network password
 const char *connectionString = ""; // your device's connection string
@@ -41,7 +43,7 @@ void executeCommand(const char *cmdName, char *payload)
     {
         LOG_VERBOSE("Executing setLED -> value: %s", payload);
         int ledVal = atoi(payload);
-        digitalWrite(2, ledVal);
+        digitalWrite(led_pin, ledVal);
     }
 }
 
@@ -71,7 +73,8 @@ void onEvent(const AzureIoTCallbacks_e cbType, const AzureIoTCallbackInfo_t *cal
         executeCommand(callbackInfo->tag, *buffer);
     }
 
-    if (strcmp(callbackInfo->eventName, "SettingsUpdated") == 0) {
+    if (strcmp(callbackInfo->eventName, "SettingsUpdated") == 0)
+    {
         // handle desired state
         LOG_VERBOSE("Handling desired properties\r\n");
         LOG_VERBOSE(callbackInfo->payload);
@@ -80,24 +83,27 @@ void onEvent(const AzureIoTCallbacks_e cbType, const AzureIoTCallbackInfo_t *cal
         jsobject_t desired;
         jsobject_initialize(&parsed, callbackInfo->payload, callbackInfo->payloadLength);
 
-        if (jsobject_get_object_by_name(&parsed, "desired", &desired) == 0) {
+        if (jsobject_get_object_by_name(&parsed, "desired", &desired) == 0)
+        {
             // handle complete update
-            double number = jsobject_get_number_by_name(&desired, "txInterval");
-            LOG_VERBOSE("Received complete update, txInterval: %f\r\n", number);
-            if (number > 0) {
+            double number = jsobject_get_number_by_name(&desired, "tx_interval");
+            LOG_VERBOSE("Received complete update, tx_interval: %f\r\n", number);
+            if (number > 0)
+            {
                 txInterval = static_cast<unsigned int>(number);
             }
         }
         else
         {
             // handle partial update
-            double number = jsobject_get_number_by_name(&parsed, "txInterval");
-            LOG_VERBOSE("Received partial update, txInterval: %f\r\n", number);
-            if (number > 0) {
+            double number = jsobject_get_number_by_name(&parsed, "tx_interval");
+            LOG_VERBOSE("Received partial update, tx_interval: %f\r\n", number);
+            if (number > 0)
+            {
                 txInterval = static_cast<unsigned int>(number);
             }
         }
-        
+
         jsobject_free(&parsed);
     }
 }
@@ -116,12 +122,12 @@ void setup()
 
     // Prepare LED on WROVER
     pinMode(0, OUTPUT);
-    pinMode(2, OUTPUT);
+    pinMode(led_pin, OUTPUT);
     pinMode(4, OUTPUT);
 
     // Turn off all LEDs on WROVER
     digitalWrite(0, LOW);
-    digitalWrite(2, LOW);
+    digitalWrite(led_pin, LOW);
     digitalWrite(4, LOW);
 
     // Add callbacks
@@ -161,7 +167,6 @@ void loop()
         }
         else
         {
-
         }
 
         if (!errorCode)
